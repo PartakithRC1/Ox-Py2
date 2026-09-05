@@ -1,5 +1,8 @@
 
-Visit here: https://partakithware.github.io/OxPy/
+V1 here: https://partakithware.github.io/OxPy/
+
+V2 (This version): https://partakithrc1.github.io/Ox-Py2/
+V2 Adds some Ruby/Lua, still rough and not finished implementing.
 
 Ox-Py WDE (AI Readme, some stuff is faulty, I will fix it later :/, anyhow 'opcc' does tcc-o-ppci-wasm which is how tcc is used right now if used. 'cc' just uses ppci, the AI said some other BS about tcc and such, but you get the gist, sorry will do README later)
 
