@@ -1,7 +1,7 @@
 
 V1 Visit here: https://partakithware.github.io/OxPy/
 
-This Version with added support: 
+This Version with added support: https://partakithrc1.github.io/Ox-Py2/
 
 Browser-native Web Desktop Environment (WDE) for Python, C, and WebAssembly development.
 
