@@ -90,27 +90,23 @@ function oxpyLoadScript(src) {
 window.getRubyVM = function () {
     if (!window.rubyVMPromise) {
         window.rubyVMPromise = (async () => {
-            // Use ruby.wasm's own pre-built UMD bundle rather than jsDelivr's on-the-fly
-            // "+esm" converter — that converter can't cleanly bundle this package for the
-            // browser (it depends on some Node built-ins internally) and silently serves an
-            // error page instead of JS, which browsers then refuse to execute as a module.
-            if (!window["ruby-wasm-wasi"]) {
-                await oxpyLoadScript('https://cdn.jsdelivr.net/npm/@ruby/wasm-wasi@2.9.4/dist/browser.umd.js');
+            // Use ruby.wasm's self-contained "browser.script.iife.js" bundle instead of pairing
+            // up @ruby/wasm-wasi (the API) with @ruby/3.3-wasm-wasi (the binary) ourselves — that
+            // requires the two package versions to line up exactly, and CDN paths for the API
+            // package turned out to 404 at the version we tried. The iife bundle fetches its own
+            // matching ruby+stdlib.wasm internally, so there's nothing to mismatch, and it's the
+            // path every official ruby.wasm example actually uses in a plain <script> tag.
+            if (!window.rubyVM) {
+                await oxpyLoadScript('https://cdn.jsdelivr.net/npm/@ruby/3.3-wasm-wasi@latest/dist/browser.script.iife.js');
+                // The bundle initializes itself asynchronously and stores the VM on globalThis.rubyVM
+                // once ready (it also runs any <script type="text/ruby"> tags, of which we have none).
+                const deadline = Date.now() + 60000;
+                while (!window.rubyVM) {
+                    if (Date.now() > deadline) throw new Error('Timed out waiting for the Ruby VM to initialize.');
+                    await new Promise(r => setTimeout(r, 100));
+                }
             }
-            const { DefaultRubyVM } = window["ruby-wasm-wasi"];
-            const response = await fetch('https://cdn.jsdelivr.net/npm/@ruby/3.3-wasm-wasi@2.9.4/dist/ruby+stdlib.wasm');
-            let module;
-            try {
-                if (!WebAssembly.compileStreaming) throw new Error('compileStreaming unsupported');
-                module = await WebAssembly.compileStreaming(response);
-            } catch (streamErr) {
-                // Some CDNs/proxies serve .wasm with a MIME type that fails streaming compile,
-                // or compileStreaming isn't available at all — fall back to a plain buffer compile.
-                console.warn('Ox-Ruby: streaming compile failed, falling back to buffered compile:', streamErr);
-                const buf = await (await fetch('https://cdn.jsdelivr.net/npm/@ruby/3.3-wasm-wasi@2.9.4/dist/ruby+stdlib.wasm')).arrayBuffer();
-                module = await WebAssembly.compile(buf);
-            }
-            const { vm } = await DefaultRubyVM(module);
+            const vm = window.rubyVM;
 
             // Rebind puts/print/p to call back into JS so output lands in the Ox-Py terminal
             // instead of the browser devtools console. Best-effort: if this fails, Ruby still
